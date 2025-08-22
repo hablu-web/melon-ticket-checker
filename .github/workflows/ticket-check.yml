@@ -1,19 +1,20 @@
-name: Melon Ticket Checker
+name: Slack Test
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
-  job:
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - name: Check Tickets
-        uses: mooyoul/melon-ticket-actions@v1.1.0
+      - name: Send Slack message
+        uses: 8398a7/action-slack@v3
         with:
-          product-id: 211782
-          schedule-id: 100003
-          seat-id: 1276
-          slack-incoming-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: '<@U05PET1FKFT> 달려달려~'
+          status: custom
+          fields: repo,message
+          custom_payload: |
+            {
+              "text": "<@U05PET1FKFT> 슬랙 테스트 성공!"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
