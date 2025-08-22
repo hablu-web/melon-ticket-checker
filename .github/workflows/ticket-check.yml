@@ -1,20 +1,40 @@
-name: Melon Ticket Checker
+name: 빈 좌석 체크
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch: 
+    - cron: '*/5 * * * *'  # 5분마다 실행
+  workflow_dispatch:      # 수동 실행 가능
 
 jobs:
-  job:
+  check_empty_seat:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+
     steps:
-      - name: Check Tickets
-        uses: mooyoul/melon-ticket-actions@v1.1.0
+      - name: 빈 좌석 확인
+        uses: actions/github-script@v6
         with:
-          product-id: 211782
-          schedule-id: 100003
-          seat-id: FLOOR H
-          slack-incoming-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: '<@U05PET1FKFT> 달려달려~'
+          script: |
+            const axios = require('axios');
+
+            // 공연/블록 정보
+            const productId = '211782';   // prodId
+            const scheduleNo = '100003';  // scheduleNo
+            const zid = '180';            // 블록 ID
+
+            // 좌석 상태 API 요청
+            const response = await axios.get(`https://ticket.melon.com/seats?productId=${productId}&scheduleNo=${scheduleNo}`);
+            const seats = response.data.seats;
+
+            // 블록 내 빈 좌석 확인
+            const emptySeats = seats.filter(seat => seat.zid == zid && seat.status === 'available');
+
+            if (emptySeats.length > 0) {
+              console.log(`빈 좌석 있음: ${emptySeats.length}개`);
+              // Slack Webhook 전송
+              const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+              await axios.post(webhookUrl, {
+                text: `블록 ${zid}에 빈 좌석 ${emptySeats.length}개 있음! 예매하러 가세요!`
+              });
+            } else {
+              console.log(`블록 ${zid}에 빈 좌석 없음`);
+            }
